@@ -73,8 +73,8 @@ with OasisVBMTestingDataGrabber() as dg:
     histogram = HistogramMarker(bins=100 )
     hists = histogram.compute(feature["VBM_GM"])
     
-    np.save("histogram_data.npy",hists)
-    print(hists)
+    #np.save("histogram_data.npy",hists)
+    #print(hists)
     # Print the output
     #print(feature.keys())
     #print(feature["VBM_GM"]["data"].shape)  # Shape is (1 x parcels)
