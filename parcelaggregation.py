@@ -18,7 +18,7 @@ class HistogramMarker(BaseMarker):
 
     def __init__(
         self,
-        bins: int = 10,
+        bins: int,
         on: Optional[Union[str, List[str]]] = None,
         name: Optional[str] = None,
     ) -> None:
@@ -60,10 +60,15 @@ with OasisVBMTestingDataGrabber() as dg:
     marker = ParcelAggregation(parcellation="Schaefer400x17", method="mean")
     # Compute feature
     feature = marker.fit_transform(element_data)
+    
+    
+
     # Compute histograms and return bins
+    # Example implementation.
     histogram = HistogramMarker(bins=100)
     hists = histogram.compute(feature["VBM_GM"])
     
+    # The output datafile should be changed!
     np.save("histogram_data.npy",hists)
     print(hists)
     
