@@ -1,0 +1,19 @@
+workdir: /tmp
+
+with:
+    - junifer.testing.registry
+    - ./histogram_marker.py
+
+datagrabber:
+    kind: OasisVBMTestingDataGrabber
+
+
+
+markers:
+    - kind: HistogramMarker
+      name: hist
+      bins: 100  
+      masks: GM_prob0.2
+storage:
+    kind: HDF5FeatureStorage
+    uri: ./storage/oasis_vbm_histogram.hdf5
