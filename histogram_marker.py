@@ -3,19 +3,14 @@
 # Authors: Hari Prasad SV
 # License: AGPL
 
-from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Optional, ClassVar, Set, List, Dict, Union
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import numpy as np
 from junifer.api.decorators import register_marker
 from junifer.markers import BaseMarker
-from junifer.utils import logger, raise_error, warn_with_log
+from junifer.utils import logger
 from junifer.data import get_mask
-from nilearn.image import math_img
 from nilearn.maskers import NiftiMasker
-
-if TYPE_CHECKING:
-    from junifer.storage import BaseFeatureStorage
 
 __all__ = ["HistogramMarker"]
 
@@ -30,10 +25,19 @@ class HistogramMarker(BaseMarker):
     name : str, optional
         The name of the marker. If None, will use ``VBM_GM_HistogramMarker``
         (default None).
+    masks : str, dict, list of (dict or str), or None, optional
+        The masks to be used for computation (default None).
 
     """
 
-    _DEPENDENCIES: ClassVar[Set[str]] = {"numpy"}
+    _DEPENDENCIES = {"nilearn","numpy"}
+
+    _MARKER_INOUT_MAPPINGS: ClassVar[Dict[str, Dict[str, str]]] = {
+        "VBM_GM": {
+            "hist": "vector",
+            "bin_edges": "vector",
+        },
+    }
 
     def __init__(
         self,
@@ -44,33 +48,6 @@ class HistogramMarker(BaseMarker):
         self.bins = bins
         self.masks = masks
         super().__init__(on="VBM_GM", name=name)
-
-    def get_valid_inputs(self) -> List[str]:
-        """Get valid data types for input.
-
-        Returns
-        -------
-        list of str
-            The list of data types that can be used as input for this marker.
-
-        """
-        return ["VBM_GM"]
-
-    def get_output_type(self, input_type: str) -> str:
-        """Get output type.
-
-        Parameters
-        ----------
-        input_type : str
-            The data type input to the marker.
-
-        Returns
-        -------
-        str
-            The storage type output by the marker.
-
-        """
-        return "vector"
 
     def compute(
         self,
@@ -101,13 +78,11 @@ class HistogramMarker(BaseMarker):
         logger.debug("Computing histogram")
 
         t_input_img = input["data"]
-        
-        # Load mask+
-        
+        # Load mask if provided
         if self.masks is not None:
             logger.debug(f"Masking with {self.masks}")
-            # Get tailored mask
             breakpoint()
+            # Get tailored mask
             mask_img = get_mask(
                 masks=self.masks, target_data=input, extra_input=extra_input
             )
@@ -139,99 +114,3 @@ class HistogramMarker(BaseMarker):
                 "col_names": list(range(bin_edges.size)),
             },
         }
-
-    def store(
-        self,
-        type_: str,
-        feature: str,
-        out: Dict[str, Any],
-        storage: "BaseFeatureStorage",
-    ) -> None:
-        """Store.
-
-        Parameters
-        ----------
-        type_ : str
-            The data type to store.
-        feature : {"hist", "bin_edges"}
-            The feature name to store.
-        out : dict
-            The computed result as a dictionary to store.
-        storage : storage-like
-            The storage class, for example, SQLiteFeatureStorage.
-
-        Raises
-        ------
-        ValueError
-            If ``feature`` is invalid.
-
-        """
-        if feature in ["hist", "bin_edges"]:
-            output_type = "vector"
-        else:
-            raise_error(f"Unknown feature: {feature}")
-
-        logger.debug(f"Storing {output_type} in {storage}")
-        storage.store(kind=output_type, **out)
-
-    def _fit_transform(
-        self,
-        input: Dict[str, Dict],
-        storage: Optional["BaseFeatureStorage"] = None,
-    ) -> Dict:
-        """Fit and transform.
-
-        Parameters
-        ----------
-        input : dict
-            The Junifer Data object.
-        storage : storage-like, optional
-            The storage class, for example, SQLiteFeatureStorage.
-
-        Returns
-        -------
-        dict
-            The processed output as a dictionary. If `storage` is provided,
-            empty dictionary is returned.
-
-        """
-        out = {}
-        for type_ in self._on:
-            if type_ in input.keys():
-                logger.info(f"Computing {type_}")
-                t_input = input[type_]
-                extra_input = input.copy()
-                extra_input.pop(type_)
-                t_meta = t_input["meta"].copy()
-                t_meta["type"] = type_
-
-                # Returns multiple features
-                t_out = self.compute(input=t_input, extra_input=extra_input)
-
-                if storage is None:
-                    out[type_] = {}
-
-                for feature_name, feature_data in t_out.items():
-                    # Make deep copy of the feature data for manipulation
-                    feature_data_copy = deepcopy(feature_data)
-                    # Make deep copy of metadata and add to feature data
-                    feature_data_copy["meta"] = deepcopy(t_meta)
-                    # Update metadata for the feature,
-                    # feature data is not manipulated, only meta
-                    self.update_meta(feature_data_copy, "marker")
-                    # Update marker feature's metadata name
-                    feature_data_copy["meta"]["marker"]["name"] += f"_{feature_name}"
-
-                    if storage is not None:
-                        logger.info(f"Storing in {storage}")
-                        self.store(
-                            type_=type_,
-                            feature=feature_name,
-                            out=feature_data_copy,
-                            storage=storage,
-                        )
-                    else:
-                        logger.info("No storage specified, returning dictionary")
-                        out[type_][feature_name] = feature_data_copy
-
-        return out
