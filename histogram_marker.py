@@ -101,14 +101,15 @@ class HistogramMarker(BaseMarker):
         logger.debug("Computing histogram")
 
         t_input_img = input["data"]
-        breakpoint()
+        
         # Load mask+
         
         if self.masks is not None:
             logger.debug(f"Masking with {self.masks}")
             # Get tailored mask
+            breakpoint()
             mask_img = get_mask(
-                masks=self.masks, target_data=input["data"], extra_input=extra_input
+                masks=self.masks, target_data=input, extra_input=extra_input
             )
             
             # Apply the mask to the input image
