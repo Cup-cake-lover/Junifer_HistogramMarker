@@ -1,0 +1,34 @@
+workdir: /tmp
+with:
+    - ./histogram_marker.py
+
+datagrabber:
+    kind: DataladAOMICID1000
+    types: VBM_GM
+
+markers:
+    - kind: HistogramMarker
+      name: hist
+      bins: 100  
+      masks:
+          compute_brain_mask:
+              threshold: 0.2
+              mask_type: gm
+
+storage:
+    kind: HDF5FeatureStorage
+    uri: /data/group/riseml/hsreeki/storage/AOMICID1000_vbm_histogram.hdf5
+
+queue:
+  jobname: HCP_VBM_GM_HistogramComputation_AOMIC
+  kind: HTCondor
+  env:
+    kind: venv 
+    name: /home/hsreekri/Hsreekri
+  mem: 8G
+  cpus: 1
+  disk: 10G
+  pre_run: |
+    source /data/group/appliedml/tools/ants_2.5.0/ants.sh 
+  verbose: info
+  collect: yes
