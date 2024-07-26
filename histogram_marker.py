@@ -81,7 +81,7 @@ class HistogramMarker(BaseMarker):
         # Load mask if provided
         if self.masks is not None:
             logger.debug(f"Masking with {self.masks}")
-            breakpoint()
+            #breakpoint()
             # Get tailored mask
             mask_img = get_mask(
                 masks=self.masks, target_data=input, extra_input=extra_input
